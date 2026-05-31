@@ -42,30 +42,7 @@ class DataCleaner:
         df['imdbId'] = df['imdbId'].astype('Int64')
 
         return df
-    
-    # def clean_cast(self,df):
-    #     cleaned_cast = []
 
-    #     for row in df['cast']:
-    #         actors = []
-    #         counter = 0
-
-    #     # check if row is list
-    #         if isinstance(row, list):
-    #             for item in row:
-
-    #                 if counter < 3:
-
-    #                     actors.append(
-    #                         item['name']
-    #                         .replace(" ", "")
-    #                         .lower()
-    #                     )
-    #                     counter += 1
-    #         cleaned_cast.append(actors)
-    #     df['cast'] = cleaned_cast
-
-    #     return df
     def clean_cast(self, df):
 
         cleaned_cast = []
