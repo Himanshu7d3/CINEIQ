@@ -83,8 +83,7 @@ class MovieLensDownloader:
 def download():
     links = [
         "lakshmi25npathi/imdb-dataset-of-50k-movie-reviews",
-        "rounakbanik/the-movies-dataset"
-    ]
+        "rounakbanik/the-movies-dataset"]
 
     # Initialize and run Kaggle downloader
     downloader = KaggleDatasetDownloader(links)
