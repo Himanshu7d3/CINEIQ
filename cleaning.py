@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import ast
+from SentimentScore import Sentiment 
 
 class DataCleaner:
     def clean_tmdbId(self,df):
@@ -175,6 +176,9 @@ class DataCleaner:
         # fill missing overview with empty string
         df['overview'] = df['overview'].fillna('')
 
+        # for sentiment score calulation
+        df['sentiment']=df['overview']
+
         # split into words
         df['overview'] = df['overview'].apply(
             lambda x: x.split()
@@ -205,6 +209,8 @@ class DataCleaner:
     def clean_tagline(self,df):
         df['tagline']=df['tagline'].fillna('')
         df['tagline']=df['tagline'].str.lower()
+        # concatenate in sentiment column for sentment score
+        df['sentiment']=df['sentiment']+df['tagline']
         df['tagline']=df['tagline'].apply(lambda x:x.split())
         return df
     def rating_transform(self,df):
@@ -215,6 +221,12 @@ class DataCleaner:
         df2['ave_rating']=df2['rating']/df2['counts']
         return df2
     
+    def setimentcsore(self,df):
+        ss=Sentiment()
+        df['sentiment_score']=ss.PredictScores(df['sentiment'])
+        df.drop('sentiment',axis=1,inplace=True)
+        return df
+
     def clean(self, df):
 
         # Remove duplicates
@@ -240,5 +252,6 @@ class DataCleaner:
         df=self.clean_overview(df)
         df=self.clean_genres(df)
         df=self.clean_tagline(df)
+        df=self.setimentcsore(df)
 
         return df
