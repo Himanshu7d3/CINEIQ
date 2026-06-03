@@ -258,10 +258,7 @@ class DataCleaner:
         df=self.clean_overview(df)
         df=self.clean_genres(df)
         df=self.clean_tagline(df)
-<<<<<<< HEAD
         df=self.setimentcsore(df)
-=======
         df=self.clean_columns(df)
->>>>>>> f9e5695 (Update cleaning file)
 
         return df
