@@ -1,5 +1,5 @@
 import re
-
+import os
 import pandas as pd
 import numpy as np
 import ast
@@ -188,13 +188,12 @@ class DataCleaner:
         df['sentiment']=df['sentiment']+df['tagline']
         df['tagline']=df['tagline'].apply(lambda x:x.split())
         return df
-    
-    def rating_transform(self, df):
-        df2 = df.groupby('movieId').agg(
-            rating=('rating', 'sum'),
-            counts=('rating', 'count'),
-            ave_rating=('rating', 'mean')
-        ).reset_index()
+    def rating_transform(self,df):
+        new_rating=df[['rating','movieId']]
+        df2=new_rating.groupby('movieId').sum().reset_index()
+        df3=new_rating['movieId'].value_counts().reset_index(name='counts')
+        df2=df2.merge(df3,on='movieId')
+        df2['ave_rating']=df2['rating']/df2['counts']
         return df2
     def clean_text(self,text):
         text = str(text).lower()
@@ -234,32 +233,49 @@ class DataCleaner:
         df.drop('sentiment',axis=1,inplace=True)
         return df
 
-    def clean(self, df):
+    def clean(self, df=None):
+        save_dir = os.path.join('Datasets', 'Cleaned')
+        save_path = os.path.join(save_dir, 'cleaned_data.csv')
 
+        # 1. Check if the file already exists to bypass cleaning
+        if os.path.exists(save_path):
+            return pd.read_csv(save_path)
+
+        # 2. If it doesn't exist, ensure a dataframe was passed to clean
+        if df is None:
+            pass
+
+        print("Starting data cleaning process...")
+        
         # Remove duplicates
         df = df.drop_duplicates()
         # Lowercase titles
         df['tf_idf_title'] = df['title'].str.lower()
 
-        df=self.clean_imdb(df)
+        df = self.clean_imdb(df)
         df.drop(columns=['imdb_id'], inplace=True)
 
-        df=self.clean_tmdbId(df)
+        df = self.clean_tmdbId(df)
         df.drop(columns=['id'], inplace=True)
 
-        col_name=['cast','crew','keywords','belongs_to_collection','genres']
+        col_name = ['cast', 'crew', 'keywords', 'belongs_to_collection', 'genres']
         for item in col_name:
             df[item] = df[item].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else []) 
 
         df = self.clean_cast(df) 
-        df=self.clean_crew(df)
+        df = self.clean_crew(df)
         # df.drop(columns=['cast','crew'],inplace=True)
-        df= self.clean_keywords(df)
+        df = self.clean_keywords(df)
         # df=self.clean_belongs_to_collection(df)
-        df=self.clean_overview(df)
-        df=self.clean_genres(df)
-        df=self.clean_tagline(df)
-        df=self.setimentcsore(df)
-        df=self.clean_columns(df)
-
+        df = self.clean_overview(df)
+        df = self.clean_genres(df)
+        df = self.clean_tagline(df)
+        df = self.setimentcsore(df)
+        df = self.clean_columns(df)
+        
+        # 3. Create the directory if it doesn't exist and save the cleaned data
+        os.makedirs(save_dir, exist_ok=True)
+        # Save to CSV (index=False prevents pandas from writing row numbers as a column)
+        df.to_csv(save_path, index=False)
+        
         return df

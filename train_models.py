@@ -8,6 +8,7 @@ from scipy.sparse import csr_matrix
 
 def build_all_models(df, ratings):
     tfidf_path = "tfidf_data.pkl"
+    df["tags"] = df["tags"].fillna("")
 
     tfidf = TfidfVectorizer()
     tfidf_matrix = tfidf.fit_transform(df["tags"])

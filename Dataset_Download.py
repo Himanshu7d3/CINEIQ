@@ -5,7 +5,7 @@ import urllib.request
 import zipfile
 
 class KaggleDatasetDownloader:
-    def __init__(self, links, base_dir="Datasets"):
+    def __init__(self, links, base_dir=os.path.join("Datasets", "Raw")):
         self.links = links
         self.base_dir = os.path.abspath(base_dir)
 
@@ -41,7 +41,7 @@ class KaggleDatasetDownloader:
 class MovieLensDownloader:
     def __init__(self):
         self.url = "https://files.grouplens.org/datasets/movielens/ml-25m.zip"
-        self.base_save_dir = os.path.abspath("Datasets")
+        self.base_save_dir = os.path.join("Datasets", "Raw")
         self.dataset_name = "movielens-25m"
 
         self.save_dir = os.path.join(self.base_save_dir, self.dataset_name)
@@ -93,7 +93,7 @@ def download():
     ml_downloader = MovieLensDownloader()
     ml_downloader.run()
 def make_dataframe():
-    folder_path=os.path.join("Datasets", "the-movies-dataset")
+    folder_path=os.path.join("Datasets","Raw", "the-movies-dataset")
     files=['credits','keywords','links','links_small','movies_metadata','ratings_small','ratings']
     dataframes={}
     for file in files:
