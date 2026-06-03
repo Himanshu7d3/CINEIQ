@@ -92,7 +92,35 @@ def download():
     # Initialize and run MovieLens downloader
     ml_downloader = MovieLensDownloader()
     ml_downloader.run()
-
+def make_dataframe():
+    folder_path=os.path.join("Datasets", "the-movies-dataset")
+    files=['credits','keywords','links','links_small','movies_metadata','ratings_small','ratings']
+    dataframes={}
+    for file in files:
+        file_path=os.path.join(folder_path, f"{file}.csv")
+        dataframes[file] = pd.read_csv(file_path,low_memory=False)
+    credits_df=dataframes['credits']
+    keywords_df=dataframes['keywords']
+    links_df=dataframes['links']
+    links_small_df=dataframes['links_small']
+    movies_metadata_df=dataframes['movies_metadata']
+    ratings_df=dataframes['ratings']
+    ratings_small_df=dataframes['ratings_small']
+    combined_links = pd.concat([links_df, links_small_df], axis=0, ignore_index=True).drop_duplicates()
+    movies_metadata_df["id"] = pd.to_numeric(movies_metadata_df["id"], errors="coerce")
+    combined_links["tmdbId"] = pd.to_numeric(
+    combined_links["tmdbId"],
+    errors="coerce"
+)
+    df = credits_df.merge(keywords_df,on="id", how="outer") \
+        .merge(combined_links, left_on="id", right_on="tmdbId", how="outer") \
+        .merge(movies_metadata_df,on="id", how="outer")
+    combined_ratings = (
+    pd.concat([ratings_df, ratings_small_df], ignore_index=True)
+    .sort_values("timestamp")
+    .drop_duplicates(subset=["userId", "movieId"], keep="last")
+)
+    return df, combined_ratings
 
 if __name__ == "__main__":
     download()
