@@ -11,7 +11,7 @@ class ContentBasedFiltering:
 
     def __init__(self, df):
         self.df = df.copy()
-        # self.df["tf_idf_title"] = self.df["title"].apply(self._normalize)
+        self.df["tf_idf_title"] = self.df["title"].apply(self._normalize)
 
         # build or load TF-IDF once
         self.tfidf_matrix, self.title_to_idx = self._build_or_load_tfidf()
@@ -104,7 +104,7 @@ class ContentBasedFiltering:
             movie_norm = self._normalize(movie)
             idx = self.title_to_idx.get(movie_norm)
 
-            if idx is None:
+            if idx is None or idx == source_idx:
                 continue
 
             tfidf_score = cosine_similarity(
