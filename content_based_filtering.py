@@ -1,152 +1,138 @@
 import pandas as pd
 import numpy as np
-import string
-# import nltk
-# from nltk.stem.porter import PorterStemmer
+import re
+import os
+import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import re
 
-class content_based_filtering:
-    
 
-    def clean_text(self,text):
-        text = str(text).lower()
-        text = re.sub(r'\s+', ' ', text)   # only remove extra spaces
+class ContentBasedFiltering:
+
+    def __init__(self, df):
+        self.df = df.copy()
+        self.df["tf_idf_title"] = self.df["title"].apply(self._normalize)
+
+        # build or load TF-IDF once
+        self.tfidf_matrix, self.title_to_idx = self._build_or_load_tfidf()
+
+    # general function to normalize text (lowercase, strip, remove extra spaces)
+    def _normalize(self, text):
+        text = str(text).lower().strip()
+        text = re.sub(r"\s+", " ", text)
         return text
-        
-    def make_new_df(self, df):
 
-        df['tags'] = (
+    # build or load TF-IDF from pickle file
+    def _build_or_load_tfidf(self):
 
-        (df['genres']) * 8 +
+        pickle_path = "tfidf_data.pkl"
 
-        (df['keywords']) * 5 +
+        # load from pickle if exists and shape matches
+        if os.path.exists(pickle_path):
+            with open(pickle_path, "rb") as f:
+                data = pickle.load(f)
 
-        (df['Actors']) * 3 +
+            if data.get("shape") == self.df.shape:
+                return data["matrix"], data["title_to_idx"]
 
-        (df['Director']) * 3 +
-        df['tagline']+
+        # build tfidf_data.pkl if not exists or shape mismatch
+        tfidf = TfidfVectorizer()
+        tfidf_matrix = tfidf.fit_transform(self.df["tags"])
 
-        df['overview']
+        title_to_idx = pd.Series(
+            self.df.index,
+            index=self.df["tf_idf_title"]
+        ).to_dict()
 
-    )
+        # save to pickle for future use
+        data = {
+            "matrix": tfidf_matrix,
+            "title_to_idx": title_to_idx,
+            "shape": self.df.shape
+        }
 
-        # Convert list to string
-        # df['tags'] = df['tags'].apply(
-        #     lambda x: " ".join(x)
-        # )
+        with open(pickle_path, "wb") as f:
+            pickle.dump(data, f)
 
-        new_df = df[
-            [
-                'movieId',
-                'imdbId',
-                'tmdbId',
-                'title',
-                'genres',
-                'keywords',
-                'Actors',
-                'overview',
-                'Director',
-                'tags'
-            ]
-        ]
-        cols=['tags','genres','keywords','Actors','overview','Director']
-        for item in cols:
-            new_df[item]=new_df[item].apply(lambda x:' '.join(x))
-            new_df[item]=new_df[item].apply(self.clean_text)
+        return tfidf_matrix, title_to_idx
 
-        new_df = new_df.drop_duplicates()
-        new_df = new_df.drop_duplicates(subset='tmdbId')
-        new_df=new_df.drop_duplicates(subset='title')
+    # Recommendation by TF-IDF
+    def recommend_tfidf(self, movie_title, top_n=10):
 
-        return new_df
-    
-    def recommend_tfidf(self,df, movie_title, top_n=10):
-        new_df=self.make_new_df(df)
-        tfidf = TfidfVectorizer(
-    max_features=30000,
-    ngram_range=(1,2),
-    stop_words='english',
-    min_df=2,
-    max_df=0.85,
-    sublinear_tf=True
-)
-        tfidf_matrix = tfidf.fit_transform(new_df['tags'])
+        movie_title = self._normalize(movie_title)
 
-        movie_title = movie_title.lower()
+        if movie_title not in self.title_to_idx:
+            return pd.DataFrame(columns=["title", "score"])
 
-        # find movie
-        match = new_df[new_df['title'].str.lower() == movie_title]
+        idx = self.title_to_idx[movie_title]
 
-        if match.empty:
-            print("Movie not found in dataset.")
-            return pd.DataFrame()
-        
-        idx = match.index[0]
+        sim = cosine_similarity(
+            self.tfidf_matrix,
+            self.tfidf_matrix[idx]
+        ).ravel()
 
-        # target movie info
-        target_genres = set(
-            str(new_df.loc[idx, 'genres']).lower().split()
-        )
+        sim[idx] = -1
 
-        target_actors = set(
-            str(new_df.loc[idx, 'Actors']).lower().split()
-        )
+        top_idx = np.argsort(sim)[::-1][:top_n]
 
-        target_director = str(new_df.loc[idx, 'Director']).lower()
-
-        # TF-IDF vector for target movie
-        target_vector = tfidf_matrix[idx]
-
-        # similarity against ALL movies
-        sim = cosine_similarity(tfidf_matrix, target_vector).flatten()
-
-        scores = []
-
-        for i in range(len(new_df)):
-
-            if i == idx:
-                continue
-
-            score = sim[i]
-
-            # GENRE BOOST 
-            movie_genres = set(
-                str(new_df.iloc[i]['genres']).lower().split()
-            )
-
-            genre_overlap = len(target_genres & movie_genres)
-
-            score += genre_overlap * 0.08
-
-            # ACTORS BOOST 
-            movie_actors = set(
-                str(new_df.iloc[i]['Actors']).lower().split()
-            )
-
-            cast_overlap = len(target_actors & movie_actors)
-
-            score += cast_overlap * 0.03
-
-            # DIRECTOR BOOST
-            movie_director = str(new_df.iloc[i]['Director']).lower()
-
-            if movie_director == target_director:
-                score += 0.1
-
-            scores.append((i, score))
-
-        # sort
-        scores = sorted(scores, key=lambda x: x[1], reverse=True)
-
-        # top results
-        movie_indices = [i[0] for i in scores[:top_n]]
-
-        result = new_df.iloc[movie_indices][['title']].copy()
-
-        result['score'] = [i[1] for i in scores[:top_n]]
+        result = self.df.iloc[top_idx][["title"]].copy()
+        result["score"] = sim[top_idx]
 
         return result.reset_index(drop=True)
 
-        
+    # tfidf scores for candidates (for hybrid)
+    def tfidf_scores_for_candidates(self, source_movie, candidate_movies=None, top_n=100):
+
+        source_movie = self._normalize(source_movie)
+
+        if source_movie not in self.title_to_idx:
+            return pd.DataFrame(columns=["movie", "content_score"])
+
+        source_idx = self.title_to_idx[source_movie]
+
+        target_genres = set(str(self.df.loc[source_idx, "genres"]).lower().split())
+        target_actors = set(str(self.df.loc[source_idx, "Actors"]).lower().split())
+        target_director = str(self.df.loc[source_idx, "Director"]).lower()
+
+        if candidate_movies is None:
+            candidate_movies = self.df["title"].tolist()
+
+        results = []
+
+        for movie in candidate_movies:
+
+            movie_norm = self._normalize(movie)
+            idx = self.title_to_idx.get(movie_norm)
+
+            if idx is None or idx == source_idx:
+                continue
+
+            tfidf_score = cosine_similarity(
+                self.tfidf_matrix[source_idx],
+                self.tfidf_matrix[idx]
+            )[0][0]
+
+            genres = set(str(self.df.loc[idx, "genres"]).lower().split())
+            actors = set(str(self.df.loc[idx, "Actors"]).lower().split())
+            director = str(self.df.loc[idx, "Director"]).lower()
+
+            genre_score = len(target_genres & genres) / max(len(target_genres | genres), 1)
+            actor_score = len(target_actors & actors) / max(len(target_actors | actors), 1)
+            director_score = 1.0 if director == target_director else 0.0
+
+            final_score = (
+                0.65 * tfidf_score +
+                0.20 * genre_score +
+                0.10 * actor_score +
+                0.05 * director_score
+            )
+
+            results.append({
+                "movie": movie,
+                "content_score": final_score
+            })
+
+        return pd.DataFrame(results).sort_values(
+            "content_score",
+            ascending=False
+        ).head(top_n).reset_index(drop=True)
