@@ -213,12 +213,13 @@ class DataCleaner:
         df['sentiment']=df['sentiment']+df['tagline']
         df['tagline']=df['tagline'].apply(lambda x:x.split())
         return df
-    def rating_transform(self,df):
-        new_rating=df[['rating','movieId']]
-        df2=new_rating.groupby('movieId').sum().reset_index()
-        df3=new_rating['movieId'].value_counts().reset_index(name='counts')
-        df2=df2.merge(df3,on='movieId')
-        df2['ave_rating']=df2['rating']/df2['counts']
+    
+    def rating_transform(self, df):
+        df2 = df.groupby('movieId').agg(
+            rating=('rating', 'sum'),
+            counts=('rating', 'count'),
+            ave_rating=('rating', 'mean')
+        ).reset_index()
         return df2
     
     def setimentcsore(self,df):
