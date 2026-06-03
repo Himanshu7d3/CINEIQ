@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 import numpy as np
 import ast
@@ -94,25 +96,18 @@ class DataCleaner:
 
         df['crew'] = new_col
         cleaned_dir = []
-        cleaned_pro=[]
 
         for row in df['crew']:
             directors = []
-            producer=[]
 
             if isinstance(row, list):
                 for item in row:
                     if item.get('department') == 'directing':
                         name = item.get('name', '')
                         directors.append(name.replace(" ", "").lower())
-                    if item.get('department')=='production':
-                        name=item.get('name','')
-                        producer.append(name.replace(" ","").lower())
 
             cleaned_dir.append(directors)
-            cleaned_pro.append(producer)
         df['Director'] = cleaned_dir
-        df['Producer'] = cleaned_pro
         return df
 
     def clean_keywords(self,df):
@@ -129,26 +124,6 @@ class DataCleaner:
             cleaned.append(words)
         
         df['keywords'] = cleaned
-        return df
-    
-    def clean_belongs_to_collection(self,df):
-
-        cleaned = []
-
-        for item in df['belongs_to_collection']:
-
-            if isinstance(item, dict):
-
-                name = item.get('name', '')
-                name = name.replace(" ", "").lower()
-
-                cleaned.append([name])   # LIST
-
-            else:
-                cleaned.append([])
-
-        df['belongs_to_collection'] = cleaned
-
         return df
     
     def clean_overview(self,df):
@@ -221,6 +196,37 @@ class DataCleaner:
             ave_rating=('rating', 'mean')
         ).reset_index()
         return df2
+    def clean_text(self,text):
+        text = str(text).lower()
+        text = re.sub(r'\s+', ' ', text)   # only remove extra spaces
+        return text
+    def clean_columns(self,df):
+        col=['cast','crew','adult','budget','homepage','original_language','original_title','popularity','poster_path','production_companies','production_countries',
+              'release_date','revenue','runtime','spoken_languages','status','video','vote_average','vote_count','belongs_to_collection']
+        df.drop(columns=col,inplace=True)
+        df['tags'] = (
+
+        (df['genres']) * 8 +
+
+        (df['keywords']) * 5 +
+
+        (df['Actors']) * 3 +
+
+        (df['Director']) * 3 +
+        df['tagline']+
+
+        df['overview']
+        )
+        cols=['tags','genres','keywords','Actors','overview','Director','tagline']
+        for item in cols:
+            df[item]=df[item].apply(lambda x:' '.join(x))
+            df[item]=df[item].apply(self.clean_text)
+
+        df = df.drop_duplicates()
+        df = df.drop_duplicates(subset='tmdbId')
+        df=df.drop_duplicates(subset='title')
+        df=df.reset_index(drop=True)
+        return df
     
     def setimentcsore(self,df):
         ss=Sentiment()
@@ -232,9 +238,8 @@ class DataCleaner:
 
         # Remove duplicates
         df = df.drop_duplicates()
-
         # Lowercase titles
-        # df['title'] = df['title'].str.lower()
+        df['tf_idf_title'] = df['title'].str.lower()
 
         df=self.clean_imdb(df)
         df.drop(columns=['imdb_id'], inplace=True)
@@ -242,17 +247,19 @@ class DataCleaner:
         df=self.clean_tmdbId(df)
         df.drop(columns=['id'], inplace=True)
 
-        col_name=['cast','crew','keywords','belongs_to_collection','spoken_languages','production_companies','genres','production_countries']
+        col_name=['cast','crew','keywords','belongs_to_collection','genres']
         for item in col_name:
             df[item] = df[item].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else []) 
 
         df = self.clean_cast(df) 
         df=self.clean_crew(df)
+        # df.drop(columns=['cast','crew'],inplace=True)
         df= self.clean_keywords(df)
-        df=self.clean_belongs_to_collection(df)
+        # df=self.clean_belongs_to_collection(df)
         df=self.clean_overview(df)
         df=self.clean_genres(df)
         df=self.clean_tagline(df)
         df=self.setimentcsore(df)
+        df=self.clean_columns(df)
 
         return df
