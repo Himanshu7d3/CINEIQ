@@ -102,7 +102,7 @@ class SentimentThresholdOptimizer:
             self.threshold = None      
 
 def setup():
-    df=pd.read_csv(os.path.join("Datasets", "imdb-dataset-of-50k-movie-reviews", "IMDB Dataset.csv"))
+    df=pd.read_csv(os.path.join("Datasets","raw", "imdb-dataset-of-50k-movie-reviews", "IMDB Dataset.csv"))
     df['review'] = df['review'].str.replace(r'<br\s*/?>', '', regex=True)
     df['review'] = df['review'].str.lower()
     return df
