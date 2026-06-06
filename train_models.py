@@ -8,6 +8,12 @@ from scipy.sparse import csr_matrix
 
 def build_all_models(df, ratings):
     tfidf_path = "tfidf_data.pkl"
+    svd_path = "svd_data.pkl"
+
+    if os.path.exists(tfidf_path) and os.path.exists(svd_path):
+        print("Both TF-IDF and SVD models already exist")
+        return
+
     df["tags"] = df["tags"].fillna("")
 
     tfidf = TfidfVectorizer()
@@ -27,9 +33,7 @@ def build_all_models(df, ratings):
     with open(tfidf_path, "wb") as f:
         pickle.dump(tfidf_data, f)
 
-    print("✅ TF-IDF model saved")
-
-    svd_path = "svd_data.pkl"
+    print("TF-IDF model saved")
 
     user_ids = ratings["userId"].astype("category")
     movie_ids = ratings["movieId"].astype("category")
@@ -55,6 +59,6 @@ def build_all_models(df, ratings):
     with open(svd_path, "wb") as f:
         pickle.dump(svd_data, f)
 
-    print("✅ SVD model saved")
+    print("SVD model saved")
 
     return "Both TF-IDF and SVD models built successfully"
