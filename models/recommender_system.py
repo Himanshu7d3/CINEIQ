@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np
-import pickle
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics.pairwise import cosine_similarity
 
-from content_based_filtering import ContentBasedFiltering
-from collaborative_filtering import collaborative_filtering
+from models.content_based_filtering import ContentBasedFiltering
+from models.collaborative_filtering import collaborative_filtering
 
 
 class recommender_system:
@@ -19,7 +17,7 @@ class recommender_system:
 
     def hybrid_recommendation(self, user_id=None, movie_title=None, top_n=10):
 
-        sentiment_df = self.df[['title', 'sentiment_score']].drop_duplicates()
+        sentiment_df = self.df[['title', 'sentiment_score','ave_rating','genres']].drop_duplicates()
         scaler = MinMaxScaler()
 
         # only user_id provided, no movie_title
@@ -30,8 +28,7 @@ class recommender_system:
             svd_df = svd_df[svd_df["movie"].isin(self.df["title"])]
 
             svd_df = svd_df.rename(columns={"movie": "title", "score": "svd_score"})
-            svd_df = pd.merge(svd_df, sentiment_df, on="title", how="left")
-            svd_df["sentiment_score"] = svd_df["sentiment_score"].fillna(0)
+            svd_df = pd.merge(svd_df, sentiment_df, on="title", how="left")        
 
             # normalize scores to 0-1 range
             svd_df[["svd_score", "sentiment_score"]] = scaler.fit_transform(
@@ -44,8 +41,9 @@ class recommender_system:
                 0.25 * svd_df["sentiment_score"]
             )
 
+            svd_df["content_score"] = 0.0
             return svd_df.sort_values("hybrid_score", ascending=False)[
-                ["title", "hybrid_score", "svd_score", "sentiment_score"]
+                ["title", "hybrid_score", "svd_score", "content_score", "ave_rating", "genres"]
             ].head(top_n).reset_index(drop=True)
 
         # only movie_title provided, no user_id
@@ -54,7 +52,6 @@ class recommender_system:
 
             df = df.rename(columns={"movie": "title", "score": "content_score"})
             df = pd.merge(df, sentiment_df, on="title", how="left")
-            df["sentiment_score"] = df["sentiment_score"].fillna(0)
 
             # normalize scores to 0-1 range
             df[["content_score", "sentiment_score"]] = scaler.fit_transform(
@@ -67,8 +64,9 @@ class recommender_system:
                 0.25 * df["sentiment_score"]
             )
 
+            df["svd_score"] = 0.0
             return df.sort_values("hybrid_score", ascending=False)[
-                ["title", "hybrid_score", "content_score", "sentiment_score"]
+                ["title", "hybrid_score", "svd_score", "content_score", "ave_rating", "genres"]
             ].head(top_n).reset_index(drop=True)
 
         # both empty
@@ -103,7 +101,6 @@ class recommender_system:
         # fill missing
         df["svd_score"] = df["svd_score"].fillna(0)
         df["content_score"] = df["content_score"].fillna(0)
-        df["sentiment_score"] = df["sentiment_score"].fillna(0)
 
         # normalize all scores to 0-1 range
         df[["svd_score", "content_score", "sentiment_score"]] = scaler.fit_transform(
@@ -118,5 +115,4 @@ class recommender_system:
         )
 
         return df.sort_values("hybrid_score", ascending=False)[
-            ["title", "hybrid_score", "svd_score", "content_score", "sentiment_score"]
-        ].head(top_n).reset_index(drop=True)
+        ['title', 'hybrid_score', 'svd_score', 'content_score', 'ave_rating', 'genres']].head(top_n).reset_index(drop=True)
