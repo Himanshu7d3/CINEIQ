@@ -8,7 +8,7 @@ import os
 
 class SentimentThresholdOptimizer:
 
-    def __init__(self, sia, save_path="best_threshold.json"):
+    def __init__(self, sia, save_path=os.path.join("models","best_threshold.json")):
         self.save_path = save_path
         self.threshold = None
         self.sia = sia
