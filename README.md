@@ -68,12 +68,12 @@ CINEIQ/
 │
 ├── Datasets/
 │   ├── Raw/                      # Downloaded Kaggle datasets (git-ignored)
-│   └── Cleaned/                  # Processed CSVs (git-ignored)
-│       ├── cleaned_data.csv
-│       └── final_ratings.csv
-│
-├── data_cleaning.py              # Full data cleaning pipeline
-├── dataset_download.py           # Kaggle dataset downloader
+│   ├── Cleaned/                  # Processed CSVs (git-ignored)
+│   │    ├── cleaned_data.csv
+│   │    └── final_ratings.csv
+│   │
+│   ├── data_cleaning.py          # Full data cleaning pipeline
+│   └── dataset_download.py       # Kaggle dataset downloader
 │
 ├── tfidf_data.pkl                # Cached TF-IDF model (auto-generated)
 └── svd_data.pkl                  # Cached SVD model (auto-generated)
