@@ -112,7 +112,7 @@ pip install -r requirements.txt
 
 CINEIQ downloads datasets from Kaggle automatically. You need a Kaggle account and API key.
 
-1. Go to [kaggle.com](https://www.kaggle.com) → Account → API → **Create New Token**
+1. Go to [kaggle.com](https://www.kaggle.com) → Account → API → **Create Legacy API Key**
 2. This downloads a `kaggle.json` file
 3. Place it at:
    - **Windows:** `C:\Users\<username>\.kaggle\kaggle.json`
