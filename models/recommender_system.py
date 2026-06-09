@@ -49,9 +49,12 @@ class recommender_system:
         # only movie_title provided, no user_id
         if movie_title is not None and user_id is None:
             df = self.cb.recommend_tfidf(movie_title, top_n=1000)
+            if df.empty:
+                    return pd.DataFrame()
 
             df = df.rename(columns={"movie": "title", "score": "content_score"})
             df = pd.merge(df, sentiment_df, on="title", how="left")
+            df["sentiment_score"] = df["sentiment_score"].fillna(0)
 
             # normalize scores to 0-1 range
             df[["content_score", "sentiment_score"]] = scaler.fit_transform(
