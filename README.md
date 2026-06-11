@@ -53,29 +53,29 @@ Content discovery on modern streaming platforms is opaque, biased toward promote
 ```
 CINEIQ/
 │
-├── App.py                        # Streamlit web application
-├── main.ipynb                    # Main notebook — full pipeline command centre
-├── train_models.py               # Builds and saves TF-IDF and SVD pickle files
-├── requirements.txt              # All dependencies
+├── App.py                             # Streamlit web application
+├── main.ipynb                         # Main notebook — full pipeline command centre
+├── train_models.py                    # Builds and saves TF-IDF and SVD pickle files
+├── requirements.txt                   # All dependencies
 │
 ├── models/
-│   ├── recommender_system.py     # Hybrid recommendation engine
-│   ├── content_based_filtering.py# TF-IDF + cosine similarity
-│   ├── collaborative_filtering.py# SVD matrix factorisation
-│   ├── sentiment_score.py        # VADER sentiment scoring + threshold optimiser
-│   └── explainability.py         # Rule-based explanation generator
+│   ├── recommender_system.py          # Hybrid recommendation engine
+│   ├── content_based_filtering.py     # TF-IDF + cosine similarity
+│   ├── collaborative_filtering.py     # SVD matrix factorisation
+│   ├── sentiment_score.py             # VADER sentiment scoring + threshold optimiser
+│   └── explainability.py              # Rule-based explanation generator
 │
 ├── Datasets/
-│   ├── Raw/                      # Downloaded Kaggle datasets (git-ignored)
-│   ├── Cleaned/                  # Processed CSVs (git-ignored)
+│   ├── Raw/                           # Downloaded Kaggle datasets (git-ignored)
+│   ├── Cleaned/                       # Processed CSVs (git-ignored)
 │   │    ├── cleaned_data.csv
 │   │    └── final_ratings.csv
 │   │
-│   ├── data_cleaning.py          # Full data cleaning pipeline
-│   └── dataset_download.py       # Kaggle dataset downloader
+│   ├── data_cleaning.py               # Full data cleaning pipeline
+│   └── dataset_download.py            # Kaggle dataset downloader
 │
-├── tfidf_data.pkl                # Cached TF-IDF model (auto-generated)
-└── svd_data.pkl                  # Cached SVD model (auto-generated)
+├── tfidf_data.pkl                     # Cached TF-IDF model (auto-generated)
+└── svd_data.pkl                       # Cached SVD model (auto-generated)
 ```
 
 ---
