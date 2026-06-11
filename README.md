@@ -13,7 +13,6 @@
 - [Getting Started](#getting-started)
 - [How It Works](#how-it-works)
 - [Dataset](#dataset)
-- [Screenshots](#screenshots)
 - [Author](#author)
 
 ---
