@@ -47,7 +47,7 @@ explainer = Explainer(movies)
 # =====================================================
 st.title("🎬 CINEIQ – Movie Recommendation System")
 st.caption(
-    "Hybrid AI engine · Collaborative Filtering · Content-Based · Sentiment-Aware"
+    "Hybrid engine · Collaborative Filtering · Content-Based · Sentiment-Aware"
 )
 
 # =====================================================
@@ -67,7 +67,7 @@ if page == " Home":
     c1, c2, c3 = st.columns(3)
     c1.metric("Total Movies",  "42,278")
     c2.metric("Total Users",   "270,896")
-    c3.metric("Engine",        "Hybrid AI")
+    c3.metric("Engine",        "Hybrid")
 
     st.divider()
     st.write(
