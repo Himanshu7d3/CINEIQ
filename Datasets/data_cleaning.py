@@ -239,13 +239,13 @@ class DataCleaner:
 
         save_dir = os.path.join('Datasets', 'Cleaned')
         save_path = os.path.join(save_dir, 'cleaned_data.csv')
-        save_ratings_path = os.path.join(save_dir, 'final_ratings.csv')
+        save_ratings_path = os.path.join(save_dir, 'final_ratings.parquet')
 
         # Load cached files if they already exist
         if os.path.exists(save_path) and os.path.exists(save_ratings_path):
 
             cleaned_df = pd.read_csv(save_path)
-            ratings_df = pd.read_csv(save_ratings_path)
+            ratings_df = pd.read_parquet(save_ratings_path)
 
             return cleaned_df, ratings_df
 
@@ -295,6 +295,6 @@ class DataCleaner:
         df = self.rating_transform(df,combined_ratings)
         # Save cleaned files
         df.to_csv(save_path, index=False)
-        combined_ratings.to_csv(save_ratings_path, index=False)
+        combined_ratings.to_parquet(save_ratings_path,engine="pyarrow",compression="snappy",index=False)
 
         return df, combined_ratings

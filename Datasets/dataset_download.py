@@ -1,6 +1,8 @@
 import pandas as pd
 import kagglehub
 import os
+import pyarrow
+
 
 class KaggleDatasetDownloader:
     def __init__(self, links, base_dir=os.path.join("Datasets", "Raw")):
@@ -46,26 +48,51 @@ def download():
     downloader.run()
     
 def make_dataframe():
-    folder_path=os.path.join("Datasets","Raw", "the-movies-dataset")
-    files=['credits','keywords','links','links_small','movies_metadata','ratings_small','ratings']
-    dataframes={}
+    # Define paths for the combined data
+    combined_folder_path = os.path.join("Datasets", "Raw", "Combined_data")
+    
+    # CHANGE: Use .parquet extensions instead of .csv
+    df_path = os.path.join(combined_folder_path, "combined_movies.parquet")
+    ratings_path = os.path.join(combined_folder_path, "combined_ratings.parquet")
+
+    # 1. Check if the combined parquet files already exist
+    if os.path.exists(df_path) and os.path.exists(ratings_path):
+        # CHANGE: Use read_parquet (no low_memory needed)
+        df = pd.read_parquet(df_path)
+        combined_ratings = pd.read_parquet(ratings_path)
+        return df, combined_ratings
+
+    # 2. If they don't exist, process the raw data
+    print("Combined files not found. Processing and merging raw datasets...")
+    folder_path = os.path.join("Datasets", "Raw", "the-movies-dataset")
+    files = ['credits', 'keywords', 'links', 'links_small', 'movies_metadata', 'ratings_small', 'ratings']
+    dataframes = {}
+    
     for file in files:
-        file_path=os.path.join(folder_path, f"{file}.csv")
-        dataframes[file] = pd.read_csv(file_path,low_memory=False)
+        file_path = os.path.join(folder_path, f"{file}.csv")
+        dataframes[file] = pd.read_csv(file_path, low_memory=False)
+        
     combined_links = pd.concat([dataframes['links'], dataframes['links_small']], axis=0, ignore_index=True).drop_duplicates()
     dataframes['movies_metadata']["id"] = pd.to_numeric(dataframes['movies_metadata']["id"], errors="coerce")
-    combined_links["tmdbId"] = pd.to_numeric(
-    combined_links["tmdbId"],
-    errors="coerce"
-)
-    df = dataframes['credits'].merge(dataframes['keywords'],on="id", how="outer") \
+    combined_links["tmdbId"] = pd.to_numeric(combined_links["tmdbId"], errors="coerce")
+    
+    df = dataframes['credits'].merge(dataframes['keywords'], on="id", how="outer") \
         .merge(combined_links, left_on="id", right_on="tmdbId", how="outer") \
-        .merge(dataframes['movies_metadata'],on="id", how="outer")
+        .merge(dataframes['movies_metadata'], on="id", how="outer")
+        
     combined_ratings = (
-    pd.concat([dataframes['ratings'], dataframes['ratings_small']], ignore_index=True)
-    .sort_values("timestamp")
-    .drop_duplicates(subset=["userId", "movieId"], keep="last")
-)
+        pd.concat([dataframes['ratings'], dataframes['ratings_small']], ignore_index=True)
+        .sort_values("timestamp")
+        .drop_duplicates(subset=["userId", "movieId"], keep="last")
+    )
+
+    # 3. Save the results to the Combined_data folder for future runs
+    os.makedirs(combined_folder_path, exist_ok=True)
+    
+    # CHANGE: Save as parquet
+    df.to_parquet(df_path, index=False)
+    combined_ratings.to_parquet(ratings_path, index=False)
+
     return df, combined_ratings
 
 if __name__ == "__main__":
