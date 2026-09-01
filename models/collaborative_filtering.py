@@ -4,12 +4,15 @@ from sklearn.decomposition import TruncatedSVD
 from scipy.sparse import csr_matrix
 import os
 import pickle
+from pathlib import Path
 
 
 class collaborative_filtering:
 
     # training the svd model
-    def train_svd(self, ratings, pickle_path="svd_data.pkl"):
+    def train_svd(self, ratings, pickle_path=None):
+        if pickle_path is None:
+            pickle_path = Path(__file__).resolve().parent.parent / "svd_data.pkl"
 
         # Create categorical mappings
         user_ids = ratings["userId"].astype("category")
@@ -42,12 +45,14 @@ class collaborative_filtering:
         print("SVD model trained and saved successfully.")
 
     # Recommendation by svd
-    def recommend_svd(self, new_df, ratings, user_id, top_n=10):
+    def recommend_svd(self, new_df, ratings=None, user_id=None, top_n=10):
 
-        pickle_path = "svd_data.pkl"
+        pickle_path = Path(__file__).resolve().parent.parent / "svd_data.pkl"
 
         # if SVD model not found, train it first
         if not os.path.exists(pickle_path):
+            if ratings is None:
+                return pd.DataFrame(columns=["movie", "score"])
             self.train_svd(ratings, pickle_path)
 
         with open(pickle_path, "rb") as f:

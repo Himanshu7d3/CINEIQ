@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import pyarrow.parquet as pq
 from pathlib import Path
 
 from models.explainability import Explainer
@@ -29,45 +30,31 @@ RATINGS_PATH = BASE_DIR / "Datasets" / "Cleaned" / "final_ratings.parquet"
 
 
 # =====================================================
-# DATA LOADING
+# DATA & RECOMMENDER LOADING
 # =====================================================
-# Movies are small enough to load when the app starts.
 @st.cache_data
 def load_movies():
     return pd.read_csv(MOVIES_PATH)
 
 
-# Ratings are intentionally NOT loaded at startup.
-# They are loaded only for User/Hybrid recommendations
-# and the My Taste dashboard.
-@st.cache_data
-def load_ratings():
+def get_user_ratings(user_id: int) -> pd.DataFrame:
+    """Query only a specific user's ratings without loading the 26M dataset into RAM."""
     if not RATINGS_PATH.exists():
-        raise FileNotFoundError(
-            f"Ratings file not found: {RATINGS_PATH}. "
-            "Make sure final_ratings.parquet is available in "
-            "Datasets/Cleaned/."
-        )
-    return pd.read_parquet(RATINGS_PATH)
+        return pd.DataFrame()
+    table = pq.read_table(
+        RATINGS_PATH,
+        columns=["userId", "movieId", "rating"],
+        filters=[("userId", "==", user_id)]
+    )
+    return table.to_pandas()
 
 
 movies = load_movies()
 
 
-# =====================================================
-# MODEL / RECOMMENDER LOADING
-# =====================================================
-# Movie-only mode does not need the ratings dataframe.
 @st.cache_resource
-def load_movie_recommender(_movies):
-    return recommender_system(_movies, None)
-
-
-# User and Hybrid modes need the ratings dataframe because
-# recommender_system passes it to recommend_svd().
-@st.cache_resource
-def load_full_recommender(_movies, _ratings):
-    return recommender_system(_movies, _ratings)
+def load_recommender(_movies):
+    return recommender_system(_movies, ratings=None)
 
 
 @st.cache_resource
@@ -156,21 +143,8 @@ elif page == " Recommender":
         movie_title = st.sidebar.text_input("Movie Title")
         run = st.sidebar.button("Get Recommendations")
 
-    # ── Load the recommender only when needed ──────────
-    # Movie Recommendation uses only movie/content data.
-    if mode == "Movie Recommendation":
-        recommend = load_movie_recommender(movies)
-    else:
-        # Ratings are loaded only when User/Hybrid is selected.
-        try:
-            ratings = load_ratings()
-            recommend = load_full_recommender(movies, ratings)
-        except Exception as e:
-            st.error(
-                "The ratings data required for this recommendation mode "
-                f"could not be loaded.\n\n{e}"
-            )
-            st.stop()
+    # ── Load the recommender ───────────────────────────
+    recommend = load_recommender(movies)
 
     # ── Movie card ────────────────────────────────────
     # ave_rating and genres come directly from the recommender result.
@@ -248,16 +222,6 @@ elif page == " My Taste":
 
     st.subheader("My Taste Dashboard")
 
-    # Ratings are loaded only after entering this page.
-    try:
-        ratings = load_ratings()
-    except Exception as e:
-        st.error(
-            "The ratings data required for My Taste could not be loaded.\n\n"
-            f"{e}"
-        )
-        st.stop()
-
     uid = st.sidebar.number_input(
         "User ID",
         min_value=1,
@@ -268,7 +232,7 @@ elif page == " My Taste":
     run_dash = st.sidebar.button("Load Dashboard")
 
     if run_dash:
-        user_ratings = ratings[ratings["userId"] == uid]
+        user_ratings = get_user_ratings(uid)
 
         if user_ratings.empty:
             st.warning("No ratings found for this user.")
