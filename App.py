@@ -86,7 +86,6 @@ st.caption(
     "Hybrid engine · Collaborative Filtering · Content-Based · Sentiment-Aware"
 )
 
-
 # =====================================================
 # SIDEBAR – navigation
 # =====================================================
