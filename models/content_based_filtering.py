@@ -3,6 +3,7 @@ import numpy as np
 import re
 import os
 import pickle
+from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -25,7 +26,7 @@ class ContentBasedFiltering:
     # build or load TF-IDF from pickle file
     def _build_or_load_tfidf(self):
 
-        pickle_path = "tfidf_data.pkl"
+        pickle_path = Path(__file__).resolve().parent.parent / "tfidf_data.pkl"
 
         # load from pickle if exists and shape matches
         if os.path.exists(pickle_path):
