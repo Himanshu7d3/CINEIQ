@@ -3,7 +3,9 @@
 > A hybrid movie recommendation system combining Collaborative Filtering, Content-Based Filtering, and Sentiment Analysis — with human-readable explanations for every recommendation.
 
 ---
+🚀 **[Try the Live App Here](https://himanshu-mandal7d3.streamlit.app/)**
 
+---
 ## 📌 Table of Contents
 
 - [Overview](#overview)
